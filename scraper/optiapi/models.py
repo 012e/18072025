@@ -82,7 +82,7 @@ class Article(BaseModel):
     edited_at: datetime
     user_segment_id: Optional[int] = None
     permission_group_id: int
-    content_tag_ids: list[int]
+    content_tag_ids: list[str]
     label_names: list[str]
     body: str
 
