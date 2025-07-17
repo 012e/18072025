@@ -32,5 +32,4 @@ async def test_sections():
             sort_order="desc"
         )
         
-        total_sections = sum(len(response.sections) for response in all_sections)
-        print(f"Got {total_sections} sections across {len(all_sections)} pages")
+        print(f"Got {len(all_sections)} sections")

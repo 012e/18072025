@@ -26,8 +26,7 @@ async def test_categories():
             sort_order="asc"
         )
         
-        total_categories = sum(len(response.categories) for response in all_categories)
-        print(f"Got {total_categories} categories across {len(all_categories)} pages")
+        print(f"Got {len(all_categories)} categories")
         
         # Return the first category ID for use in sections test
         if categories_response.categories:

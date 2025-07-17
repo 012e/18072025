@@ -3,9 +3,11 @@ from typing import Optional
 from urllib.parse import urljoin
 
 import httpx
-from logging import log
+import logging
 
-from .models import CategoriesResponse, SectionsResponse, ArticlesResponse
+from .models import CategoriesResponse, SectionsResponse, ArticlesResponse, Category, Section, Article
+
+logger = logging.getLogger(__name__)
 
 
 class OptiSignsClient:
@@ -23,18 +25,19 @@ class OptiSignsClient:
         self.locale = locale
         self.timeout = timeout
         self._session: Optional[httpx.AsyncClient] = None
+        logger.debug("OptiSignsClient initialized with locale: %s, timeout: %s", locale, timeout)
 
     @property
     def session(self) -> httpx.AsyncClient:
         """Get or create an HTTP session."""
         if self._session is None:
-            headers = {
-            }
+            headers = {}
             self._session = httpx.AsyncClient(
                 timeout=self.timeout,
                 headers=headers,
                 follow_redirects=True,
             )
+            logger.debug("HTTPX AsyncClient session created.")
         return self._session
 
     async def close(self):
@@ -42,13 +45,16 @@ class OptiSignsClient:
         if self._session:
             await self._session.aclose()
             self._session = None
+            logger.debug("HTTPX AsyncClient session closed.")
 
     async def __aenter__(self):
         """Async context manager entry."""
+        logger.debug("Entering async context for OptiSignsClient.")
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         """Async context manager exit."""
+        logger.debug("Exiting async context for OptiSignsClient.")
         await self.close()
 
     async def get_categories(
@@ -79,11 +85,15 @@ class OptiSignsClient:
             "per_page": per_page,
             "page": page,
         }
+        logger.debug("Attempting to get categories with params: %s", params)
 
         url = urljoin(self.BASE_URL, f"{self.locale}/categories.json")
+        logger.debug("Request URL: %s", url)
 
         response = await self.session.get(url, params=params)
+        logger.debug("Response status code: %s", response.status_code)
         response.raise_for_status()
+        logger.debug("Successfully fetched categories.")
 
         data = response.json()
         return CategoriesResponse.model_validate(data)
@@ -93,7 +103,7 @@ class OptiSignsClient:
         sort_by: str = "position",
         sort_order: str = "asc",
         per_page: int = 100,
-    ) -> list[CategoriesResponse]:
+    ) -> list[Category]:
         """Get all categories across all pages.
 
         Args:
@@ -102,10 +112,11 @@ class OptiSignsClient:
             per_page: Number of items per page (default: 100)
 
         Returns:
-            list[CategoriesResponse]: All category responses
+            list[Category]: All categories
         """
-        responses = []
+        categories = []
         page = 1
+        logger.debug("Fetching all categories.")
 
         while True:
             response = await self.get_categories(
@@ -114,13 +125,16 @@ class OptiSignsClient:
                 per_page=per_page,
                 page=page,
             )
-            responses.append(response)
+            categories.extend(response.categories)
+            logger.debug("Fetched page %d of categories. Next page: %s", page, response.next_page)
 
             if response.next_page is None:
+                logger.debug("No more category pages to fetch.")
                 break
             page += 1
 
-        return responses
+        logger.debug("Finished fetching all categories. Total categories: %d", len(categories))
+        return categories
 
     async def get_sections(
         self,
@@ -152,11 +166,15 @@ class OptiSignsClient:
             "per_page": per_page,
             "page": page,
         }
+        logger.debug("Attempting to get sections for category_id: %s with params: %s", category_id, params)
 
         url = urljoin(self.BASE_URL, f"{self.locale}/categories/{category_id}/sections.json")
+        logger.debug("Request URL: %s", url)
 
         response = await self.session.get(url, params=params)
+        logger.debug("Response status code: %s", response.status_code)
         response.raise_for_status()
+        logger.debug("Successfully fetched sections for category_id: %s.", category_id)
 
         data = response.json()
         return SectionsResponse.model_validate(data)
@@ -167,7 +185,7 @@ class OptiSignsClient:
         sort_by: str = "position",
         sort_order: str = "asc",
         per_page: int = 100,
-    ) -> list[SectionsResponse]:
+    ) -> list[Section]:
         """Get all sections for a specific category across all pages.
 
         Args:
@@ -177,10 +195,11 @@ class OptiSignsClient:
             per_page: Number of items per page (default: 100)
 
         Returns:
-            list[SectionsResponse]: All section responses
+            list[Section]: All sections
         """
-        responses = []
+        sections = []
         page = 1
+        logger.debug("Fetching all sections for category_id: %s.", category_id)
 
         while True:
             response = await self.get_sections(
@@ -190,13 +209,16 @@ class OptiSignsClient:
                 per_page=per_page,
                 page=page,
             )
-            responses.append(response)
+            sections.extend(response.sections)
+            logger.debug("Fetched page %d of sections for category_id %s. Next page: %s", page, category_id, response.next_page)
 
             if response.next_page is None:
+                logger.debug("No more section pages to fetch for category_id: %s.", category_id)
                 break
             page += 1
 
-        return responses
+        logger.debug("Finished fetching all sections for category_id: %s. Total sections: %d", category_id, len(sections))
+        return sections
 
     async def get_articles(
         self,
@@ -228,11 +250,15 @@ class OptiSignsClient:
             "per_page": per_page,
             "page": page,
         }
+        logger.debug("Attempting to get articles for section_id: %s with params: %s", section_id, params)
 
         url = urljoin(self.BASE_URL, f"{self.locale}/sections/{section_id}/articles.json")
+        logger.debug("Request URL: %s", url)
 
         response = await self.session.get(url, params=params)
+        logger.debug("Response status code: %s", response.status_code)
         response.raise_for_status()
+        logger.debug("Successfully fetched articles for section_id: %s.", section_id)
 
         data = response.json()
         return ArticlesResponse.model_validate(data)
@@ -243,7 +269,7 @@ class OptiSignsClient:
         sort_by: str = "position",
         sort_order: str = "asc",
         per_page: int = 100,
-    ) -> list[ArticlesResponse]:
+    ) -> list[Article]:
         """Get all articles for a specific section across all pages.
 
         Args:
@@ -253,10 +279,11 @@ class OptiSignsClient:
             per_page: Number of items per page (default: 100)
 
         Returns:
-            list[ArticlesResponse]: All article responses
+            list[Article]: All articles
         """
-        responses = []
+        articles = []
         page = 1
+        logger.debug("Fetching all articles for section_id: %s.", section_id)
 
         while True:
             response = await self.get_articles(
@@ -266,10 +293,13 @@ class OptiSignsClient:
                 per_page=per_page,
                 page=page,
             )
-            responses.append(response)
+            articles.extend(response.articles)
+            logger.debug("Fetched page %d of articles for section_id %s. Next page: %s", page, section_id, response.next_page)
 
             if response.next_page is None:
+                logger.debug("No more article pages to fetch for section_id: %s.", section_id)
                 break
             page += 1
 
-        return responses
+        logger.debug("Finished fetching all articles for section_id: %s. Total articles: %d", section_id, len(articles))
+        return articles

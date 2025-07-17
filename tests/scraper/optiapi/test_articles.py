@@ -35,8 +35,7 @@ async def test_articles():
             sort_order="desc"
         )
         
-        total_articles = sum(len(response.articles) for response in all_articles)
-        print(f"Got {total_articles} articles across {len(all_articles)} pages")
+        print(f"Got {len(all_articles)} articles")
 
         # Test with ascending order
         print("\nTesting get_articles with ascending order...")
