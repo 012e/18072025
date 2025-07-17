@@ -3,8 +3,9 @@ from typing import Optional
 from urllib.parse import urljoin
 
 import httpx
+from logging import log
 
-from .models import CategoriesResponse
+from .models import CategoriesResponse, SectionsResponse, ArticlesResponse
 
 
 class OptiSignsClient:
@@ -117,6 +118,158 @@ class OptiSignsClient:
 
             if response.next_page is None:
                 break
-            page = response.next_page
+            page += 1
+
+        return responses
+
+    async def get_sections(
+        self,
+        category_id: int,
+        sort_by: str = "position",
+        sort_order: str = "asc",
+        per_page: int = 100,
+        page: int = 1,
+    ) -> SectionsResponse:
+        """Get sections for a specific category.
+
+        Args:
+            category_id: The ID of the category to get sections for
+            sort_by: Field to sort by (default: "position")
+            sort_order: Sort order "asc" or "desc" (default: "asc")
+            per_page: Number of items per page (default: 100)
+            page: Page number (default: 1)
+
+        Returns:
+            SectionsResponse: The sections response
+
+        Raises:
+            httpx.HTTPStatusError: If the request fails
+            ValidationError: If the response cannot be parsed
+        """
+        params = {
+            "sort_by": sort_by,
+            "sort_order": sort_order,
+            "per_page": per_page,
+            "page": page,
+        }
+
+        url = urljoin(self.BASE_URL, f"{self.locale}/categories/{category_id}/sections.json")
+
+        response = await self.session.get(url, params=params)
+        response.raise_for_status()
+
+        data = response.json()
+        return SectionsResponse.model_validate(data)
+
+    async def get_all_sections(
+        self,
+        category_id: int,
+        sort_by: str = "position",
+        sort_order: str = "asc",
+        per_page: int = 100,
+    ) -> list[SectionsResponse]:
+        """Get all sections for a specific category across all pages.
+
+        Args:
+            category_id: The ID of the category to get sections for
+            sort_by: Field to sort by (default: "position")
+            sort_order: Sort order "asc" or "desc" (default: "asc")
+            per_page: Number of items per page (default: 100)
+
+        Returns:
+            list[SectionsResponse]: All section responses
+        """
+        responses = []
+        page = 1
+
+        while True:
+            response = await self.get_sections(
+                category_id=category_id,
+                sort_by=sort_by,
+                sort_order=sort_order,
+                per_page=per_page,
+                page=page,
+            )
+            responses.append(response)
+
+            if response.next_page is None:
+                break
+            page += 1
+
+        return responses
+
+    async def get_articles(
+        self,
+        section_id: int,
+        sort_by: str = "position",
+        sort_order: str = "asc",
+        per_page: int = 100,
+        page: int = 1,
+    ) -> ArticlesResponse:
+        """Get articles for a specific section.
+
+        Args:
+            section_id: The ID of the section to get articles for
+            sort_by: Field to sort by (default: "position")
+            sort_order: Sort order "asc" or "desc" (default: "asc")
+            per_page: Number of items per page (default: 100)
+            page: Page number (default: 1)
+
+        Returns:
+            ArticlesResponse: The articles response
+
+        Raises:
+            httpx.HTTPStatusError: If the request fails
+            ValidationError: If the response cannot be parsed
+        """
+        params = {
+            "sort_by": sort_by,
+            "sort_order": sort_order,
+            "per_page": per_page,
+            "page": page,
+        }
+
+        url = urljoin(self.BASE_URL, f"{self.locale}/sections/{section_id}/articles.json")
+
+        response = await self.session.get(url, params=params)
+        response.raise_for_status()
+
+        data = response.json()
+        return ArticlesResponse.model_validate(data)
+
+    async def get_all_articles(
+        self,
+        section_id: int,
+        sort_by: str = "position",
+        sort_order: str = "asc",
+        per_page: int = 100,
+    ) -> list[ArticlesResponse]:
+        """Get all articles for a specific section across all pages.
+
+        Args:
+            section_id: The ID of the section to get articles for
+            sort_by: Field to sort by (default: "position")
+            sort_order: Sort order "asc" or "desc" (default: "asc")
+            per_page: Number of items per page (default: 100)
+
+        Returns:
+            list[ArticlesResponse]: All article responses
+        """
+        responses = []
+        page = 1
+
+        while True:
+            response = await self.get_articles(
+                section_id=section_id,
+                sort_by=sort_by,
+                sort_order=sort_order,
+                per_page=per_page,
+                page=page,
+            )
+            responses.append(response)
+
+            if response.next_page is None:
+                break
+            page += 1
 
         return responses
