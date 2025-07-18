@@ -38,7 +38,7 @@ def setup_logging():
 async def save_articles(articles: list[Article]) -> list[str]:
     """Saves articles to the configured output path."""
     config = load_config()
-    logger = setup_logging()
+    logger = logging.getLogger(__name__)
 
     if not os.path.exists(config.scrape_output_path):
         os.makedirs(config.scrape_output_path)

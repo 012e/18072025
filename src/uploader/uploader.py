@@ -17,7 +17,7 @@ class BatchUploadResult:
     Represents the result of a batch file upload operation.
     """
 
-    successful_uploads: List[str]
+    successful_uploads: List[tuple[str, str]]  # List of (file_path, file_id) tuples
     failed_uploads: List[str]
 
 
@@ -250,7 +250,7 @@ class FileUploader:
             else:
                 file_path, file_id = result
                 if file_id:
-                    successful_uploads.append(file_id)
+                    successful_uploads.append((file_path, file_id))
                 else:
                     failed_uploads.append(f"{file_path} (Upload failed)")
 
