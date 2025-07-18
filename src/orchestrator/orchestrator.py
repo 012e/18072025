@@ -60,7 +60,7 @@ class ScraperOrchestrator:
             saved_paths.append(path)
             logger.debug(f"Article '{article.name}' saved to {path}")
 
-        logger.info(f"All {len(articles)} articles have been saved successfully.")
+        logger.info(f"All {len(articles)} articles have been saved to the file system successfully.")
 
     def _generate_file_hashes(self, articles: list[Article]) -> ContentLock:
         res: ContentLock = {}

@@ -35,11 +35,18 @@ def setup_logging() -> logging.Logger:
 async def main():
     """Main entry point for the application."""
     setup_logging()
+    logger = logging.getLogger(__name__)
 
     orches = ScraperOrchestrator()
     while True:
-        await orches.sync()
-        await asyncio.sleep(30)
+        try:
+            await orches.sync()
+            await asyncio.sleep(60 * 60 * 2) # Sleep for 2 hours
+        except Exception as e:
+            logger.error(f"An error occurred: {e}", exc_info=True)
+            orches = ScraperOrchestrator()
+            await asyncio.sleep(5)
+        
 
 
 if __name__ == "__main__":

@@ -24,6 +24,16 @@ class BatchUploadResult:
 
 
 class FileUploader:
+    SYSTEM_PROMPT = """
+    You are OptiBot, the customer-support bot for OptiSigns.com.
+    • Tone: helpful, factual, concise.
+    • Only answer using the uploaded docs.
+    • Max 5 bullet points; else link to the doc.
+    • Cite up to 3 "Article URL:" lines per reply.
+    """
+    ASSISTANT_NAME = "OptiBot Assistant"
+    VECTOR_STORE_NAME = "OptiBot Documents Store"
+
     def __init__(self):
         config = load_config()
         self._openai_client = OpenAI(api_key=config.openai_api_key)
@@ -33,12 +43,12 @@ class FileUploader:
 
     def _create_new_assistant(self) -> Assistant:
         """
-        Create a new assistant for financial analysis.
+        Create a new assistant.
         """
         try:
             return self._openai_client.beta.assistants.create(
-                name="Financial Analyst Assistant",
-                instructions="You are an expert financial analyst. Use your knowledge base to answer questions about audited financial statements.",
+                name=self.ASSISTANT_NAME,
+                instructions=self.SYSTEM_PROMPT,
                 model="gpt-4o",
                 tools=[{"type": "file_search"}],
                 tool_resources={
@@ -51,11 +61,11 @@ class FileUploader:
 
     def _create_new_vector_store(self) -> VectorStore:
         """
-        Create a new vector store for financial documents.
+        Create a new vector store.
         """
         try:
             return self._openai_client.vector_stores.create(
-                name="Financial Documents Store",
+                name=self.VECTOR_STORE_NAME,
                 expires_after={"anchor": "last_active_at", "days": 30},
             )
         except Exception as e:
@@ -64,13 +74,13 @@ class FileUploader:
 
     def _get_or_create_assistant(self) -> Assistant:
         """
-        Get existing assistant or create a new one for financial analysis.
+        Get existing assistant or create a new one.
         """
         try:
             # WARN: This is a paginated API
             assistants = self._openai_client.beta.assistants.list()
             for assistant in assistants.data:
-                if assistant.name == "Financial Analyst Assistant":
+                if assistant.name == self.ASSISTANT_NAME:
                     # Update the assistant to ensure it has the latest vector store
                     return self._openai_client.beta.assistants.update(
                         assistant_id=assistant.id,
@@ -95,14 +105,14 @@ class FileUploader:
 
     def _get_or_create_vector_store(self) -> VectorStore:
         """
-        Get existing vector store or create a new one for financial documents.
+        Get existing vector store or create a new one.
         """
         try:
             # WARN: This is a paginated API
             # Try to find existing vector store by name
             vector_stores = self._openai_client.vector_stores.list()
             for store in vector_stores.data:
-                if store.name == "Financial Documents Store":
+                if store.name == self.VECTOR_STORE_NAME:
                     return store
 
             return self._create_new_vector_store()
@@ -112,7 +122,7 @@ class FileUploader:
 
     def upload_file(self, file_path: str) -> Optional[str]:
         """
-        Upload a file to the vector store for financial analysis.
+        Upload a file to the vector store.
 
         Args:
             file_path (str): Path to the file to upload
@@ -185,7 +195,7 @@ class FileUploader:
 
     async def upload_file_async(self, file_path: str) -> tuple[str, Optional[str]]:
         """
-        Upload a file to the vector store for financial analysis (async version).
+        Upload a file to the vector store (async version).
 
         Args:
             file_path (str): Path to the file to upload
