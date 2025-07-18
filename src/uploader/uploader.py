@@ -2,7 +2,7 @@ import asyncio
 import logging
 import os
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import Optional
 
 from openai import OpenAI
 from openai.types import VectorStore
@@ -17,8 +17,8 @@ class BatchUploadResult:
     Represents the result of a batch file upload operation.
     """
 
-    successful_uploads: List[tuple[str, str]]  # List of (file_path, file_id) tuples
-    failed_uploads: List[str]
+    successful_uploads: list[tuple[str, str]]  # List of (file_path, file_id) tuples
+    failed_uploads: list[str]
 
 
 class FileUploader:
@@ -226,7 +226,7 @@ class FileUploader:
             return file_path, None
 
     async def upload_files_batch(
-        self, file_paths: List[str]
+        self, file_paths: list[str]
     ) -> BatchUploadResult:
         """
         Upload multiple files to the vector store in parallel.

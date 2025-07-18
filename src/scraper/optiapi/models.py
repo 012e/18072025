@@ -86,6 +86,9 @@ class Article(BaseModel):
     label_names: list[str]
     body: str
 
+    path: Optional[str] = None
+    openai_file_id: Optional[str] = None
+
 
 class ArticlesResponse(BaseModel):
     articles: list[Article]
