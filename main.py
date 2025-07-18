@@ -3,9 +3,10 @@ import logging
 import os
 import sys
 
-import logging_loki
+from loki_logger_handler.loki_logger_handler import LokiLoggerHandler
 
 from config.config import load_config
+from scraper.optiapi.models import Article
 from scraper.scraper import OptiSignsScraper
 from uploader.uploader import FileUploader
 from utils.path import slugify
@@ -23,22 +24,21 @@ def setup_logging():
     )
     root_logger.addHandler(stream_handler)
 
-    loki_handler = logging_loki.LokiHandler(
-        url=str(config.grafana_loki_url),
-        auth=(config.grafana_loki_user, config.grafana_loki_password),
-        tags={"application": "Test"},
+    loki_handler = LokiLoggerHandler(
+        url=config.grafana_loki_url,
+        labels={"application": "Test", "environment": "Develop"},
+        label_keys={},
+        timeout=10,
     )
     root_logger.addHandler(loki_handler)
 
     return logging.getLogger(__name__)
 
 
-async def main():
-    logger = setup_logging()
-
+async def save_articles(articles: list[Article]) -> list[str]:
+    """Saves articles to the configured output path."""
     config = load_config()
-    scraper = OptiSignsScraper()
-    articles = await scraper.get_articles()
+    logger = setup_logging()
 
     if not os.path.exists(config.scrape_output_path):
         os.makedirs(config.scrape_output_path)
@@ -55,18 +55,23 @@ async def main():
             file.write(article.body)
         logger.info(f"Article '{article.name}' will be saved to {path}")
     logger.info("All articles have been saved successfully.")
+    return paths
+
+
+async def main():
+    logger = setup_logging()
+
+    logger.info("Scraping articles from OptiSigns...")
+    scraper = OptiSignsScraper()
+    articles = await scraper.get_articles()
+    scraped_paths = await save_articles(articles)
 
     logger.info("Starting upload of articles to vector store...")
     uploader = FileUploader()
-
-    result = uploader.upload_files_batch(paths)
-    while result.status == "in_progress":
-        logger.info("Waiting for file upload to complete...")
-        await asyncio.sleep(5)
-    logger.info(f"File upload succeeded with {result.file_counts.completed} files.")
-
-    if result.file_counts.failed > 0:
-        logger.error(f"File upload failed with {result.file_counts.failed} files.")
+    result = await uploader.upload_files_batch(scraped_paths)
+    logger.info(
+        f"Batch upload completed. Successful uploads: {len(result.successful_uploads)}, Failed uploads: {len(result.failed_uploads)}"
+    )
 
 
 if __name__ == "__main__":
