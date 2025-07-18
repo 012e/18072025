@@ -10,6 +10,8 @@ from openai.types.beta import Assistant
 
 from config.config import load_config
 
+type OpenAIFileId = str
+
 
 @dataclass
 class BatchUploadResult:
@@ -17,7 +19,7 @@ class BatchUploadResult:
     Represents the result of a batch file upload operation.
     """
 
-    successful_uploads: list[tuple[str, str]]  # List of (file_path, file_id) tuples
+    successful_uploads: dict[str, OpenAIFileId]
     failed_uploads: list[str]
 
 
@@ -108,45 +110,6 @@ class FileUploader:
             self._logger.error(f"Error creating/getting vector store: {e}")
             raise
 
-    def update_file(self, file_path: str) -> Optional[str]:
-        pass
-        # """
-        # Update an existing file in the vector store for financial analysis.
-        #
-        # Args:
-        #      file_path (str): Path to the file to update
-        #
-        # Returns:
-        #      Optional[str]: File ID if successful, None otherwise
-        # """
-        # try:
-        #      # Validate file exists
-        #      if not os.path.exists(file_path):
-        #          self._logger.error(f"File not found: {file_path}")
-        #          return None
-        #
-        #      # Upload file to OpenAI
-        #      with open(file_path, "rb") as file:
-        #          uploaded_file = self._openai_client.files.create(
-        #              file=file, purpose="assistants"
-        #          )
-        #
-        #      # Update file in vector store
-        #
-        #      self._openai_client.vector_stores.files.update(
-        #          vector_store_id=self._vector_store.id, file_id=uploaded_file.id
-        #      )
-        #
-        #      self._logger.info(
-        #          f"Successfully updated file: {file_path} (ID: {uploaded_file.id})"
-        #      )
-        #      self._update_assitant_vector_store()
-        #      return uploaded_file.id
-        #
-        # except Exception as e:
-        #      self._logger.error(f"Error updating file {file_path}: {e}")
-        #      return None
-
     def upload_file(self, file_path: str) -> Optional[str]:
         """
         Upload a file to the vector store for financial analysis.
@@ -183,6 +146,42 @@ class FileUploader:
         except Exception as e:
             self._logger.info(f"Error uploading file {file_path}: {e}")
             return None
+
+    async def _delete_file_async(self, file_id: str):
+        loop = asyncio.get_event_loop()
+
+        def _delete_sync():
+            try:
+                self._openai_client.vector_stores.files.delete(
+                    vector_store_id=self._vector_store.id, file_id=file_id
+                )
+                self._openai_client.files.delete(file_id=file_id)
+                self._logger.info(f"Successfully deleted file {file_id}.")
+            except Exception as e:
+                self._logger.error(
+                    f"Failed to delete file {file_id}. It may have already been deleted. Error: {e}"
+                )
+
+        await loop.run_in_executor(None, _delete_sync)
+
+    async def update_files_batch(
+        self, file_paths: list[str], openai_ids: list[str]
+    ) -> BatchUploadResult:
+        """
+        Deletes a batch of old files and uploads a new batch in their place.
+
+        Args:
+            file_paths (list[str]): List of new file paths to upload.
+            openai_ids (list[str]): List of OpenAI file IDs to delete.
+
+        Returns:
+            BatchUploadResult: Result of the new upload operation.
+        """
+        delete_tasks = [self._delete_file_async(file_id) for file_id in openai_ids]
+        if delete_tasks:
+            await asyncio.gather(*delete_tasks)
+
+        return await self.upload_files_batch(file_paths)
 
     async def upload_file_async(self, file_path: str) -> tuple[str, Optional[str]]:
         """
@@ -225,9 +224,7 @@ class FileUploader:
             self._logger.error(f"Error uploading file {file_path}: {e}")
             return file_path, None
 
-    async def upload_files_batch(
-        self, file_paths: list[str]
-    ) -> BatchUploadResult:
+    async def upload_files_batch(self, file_paths: list[str]) -> BatchUploadResult:
         """
         Upload multiple files to the vector store in parallel.
 
@@ -241,7 +238,7 @@ class FileUploader:
         upload_tasks = [self.upload_file_async(file_path) for file_path in file_paths]
         results = await asyncio.gather(*upload_tasks, return_exceptions=True)
 
-        successful_uploads = []
+        successful_uploads = {}
         failed_uploads = []
 
         for result in results:
@@ -250,7 +247,7 @@ class FileUploader:
             else:
                 file_path, file_id = result
                 if file_id:
-                    successful_uploads.append((file_path, file_id))
+                    successful_uploads[file_path] = file_id
                 else:
                     failed_uploads.append(f"{file_path} (Upload failed)")
 

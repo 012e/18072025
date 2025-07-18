@@ -10,8 +10,9 @@ def get_redis():
     """Returns a Redis client instance."""
     config = load_config()
 
-    return redis.from_url(
-        f"redis://{config.redis_host}:{config.redis_port}",
+    return redis.Redis(
+        host=config.redis_host,
+        port=config.redis_port,
         password=config.redis_password,
         decode_responses=True,  # Ensure strings are returned as str, not bytes
     )

@@ -220,6 +220,30 @@ class OptiSignsClient:
         logger.debug("Finished fetching all sections for category_id: %s. Total sections: %d", category_id, len(sections))
         return sections
 
+    async def get_article_by_id(self, article_id: int) -> Article:
+        """Get a specific article by its ID.
+
+        Args:
+            article_id: The ID of the article to retrieve
+
+        Returns:
+            Article: The article object
+
+        Raises:
+            httpx.HTTPStatusError: If the request fails
+            ValidationError: If the response cannot be parsed
+        """
+        url = urljoin(self.BASE_URL, f"{self.locale}/articles/{article_id}.json")
+        logger.debug("Request URL: %s", url)
+
+        response = await self.session.get(url)
+        logger.debug("Response status code: %s", response.status_code)
+        response.raise_for_status()
+        logger.debug("Successfully fetched article with ID: %s.", article_id)
+
+        data = response.json()
+        return Article.model_validate(data)
+
     async def get_articles(
         self,
         section_id: int,

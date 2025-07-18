@@ -24,6 +24,15 @@ class OptiSignsScraper:
     def _flatten(self, nested_list: list[list[T]]) -> list[T]:
         return [item for sublist in nested_list for item in sublist]
 
+
+    async def get_article_by_ids(self, article_ids: list[int]) -> list[Article]:
+        articles = await asyncio.gather(
+            *[self._client.get_article_by_id(article_id) for article_id in article_ids]
+        )
+        self._convert_body_to_markdown(articles)
+
+        return articles
+
     async def get_articles(self) -> list[Article]:
         categories = await self._client.get_all_categories()
 

@@ -1,4 +1,4 @@
-type FileName = str
+type FileId = int
 type FileContentHash = str
 
-type ContentLock = dict[FileName, FileContentHash]
+type ContentLock = dict[FileId, FileContentHash]
