@@ -1,8 +1,9 @@
 import asyncio
-import logging as log
+import logging
 
 from scraper.scraper import OptiSignsScraper
 from utils.path import slugify
+logger = logging.getLogger(__name__)
 
 
 async def main():
@@ -15,7 +16,7 @@ async def main():
         file_path = f"./tmp/{slug}.md"
         with open(file_path, "w+", encoding="utf-8") as file:
             file.write(article.body)
-        log.info(f"Article '{article.name}' saved to {file_path}")
+        logger.info(f"Article '{article.name}' saved to {file_path}")
 
 
 if __name__ == "__main__":
