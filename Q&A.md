@@ -42,7 +42,7 @@ There are many problems which my current implementation/design that could be fur
 There are quite a few issues I encountered when using OpenAI's assistants and vector store API.
 - **Being vendor lock-in**: Our application will need massive refactoring/rewrite to change to another provider.
 - **Cumbersome developer experience**: The features are incomplete: no endpoints to update a vector by ID, no endpoints for searching assistants/vector store using their name, etc
-- **Performance**: It literally takes seconds a single query to complete.
+- **Performance**: It literally takes seconds for a single query to complete.
 
 To mitigate those issues we can **deploy our own vector database**: For project of such small scale, we can just store the vector straight inside our relational databases (e.g. PosgreSQL with pgvector, or just [sqlite](https://turso.tech/vector)).
 
