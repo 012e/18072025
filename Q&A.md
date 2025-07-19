@@ -18,7 +18,7 @@ For converting article body from html to markdown I decided to use [markdownify]
 
 ### Uploading
 
-I try to use async APIs as much as possible since uploading the documents sequentially is fairly slow.
+I try to use async APIs as much as possible, since uploading the documents sequentially is fairly slow. I initially tried to use batch uploading support from the OpenAI Python SDK, but more than half of the uploads failed, so I implemented my own batch upload solution.
 
 ### Synching changes
 
