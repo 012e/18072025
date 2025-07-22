@@ -29,7 +29,7 @@ I had to use redis to persist the article ids alongside their hash to avoid reup
 
 To learn new things, there are many possible approaches that I use:
 
-1. Read the original framework/library documentation to extract as much crucial information as possible.
+1. Read the official framework/library documentation to extract as much crucial information as possible.
 2. Ask LLMs for simple questions.
 3. For more in depth understanding of the technology I would listen to talks or read books on related topics (e.g. I consider Spring Framework or ASP.NET Core to be very complex and I have spent quite some times reading books on these topics).
 
